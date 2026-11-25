@@ -4,11 +4,6 @@ class Apm < Formula
   version "0.1.2"
   license "MIT"
 
-  livecheck do
-    url "https://apmjs.dev/cli/releases.txt"
-    regex(/^v?(\d+(?:\.\d+)+)\s/i)
-  end
-
   on_macos do
     on_arm do
       url "https://apmjs.dev/cli/0.1.2/apm-darwin-arm64"
