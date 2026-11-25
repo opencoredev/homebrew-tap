@@ -1,9 +1,37 @@
+force=false
+if [[ "${1:-}" = "--force" ]]
+then
+  force=true
+  shift
+fi
+
+if [[ -n "${1:-}" ]]
+then
+  version="$1"
+  [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || die "not a version: ${version}"
+  if [[ "${force}" = false ]] && ! [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+  then
+    die "${version} is a prerelease; pass --force to put it in the formula"
+  fi
+else
+  version=$(printf '%s\n' "${index}" | awk '$1 ~ /^[0-9]+\.[0-9]+\.[0-9]+$/ { print $1 }' | sort -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
+  [[ -n "${version}" ]] || die "releases.txt lists no stable version"
+fi
+
+if [[ "${force}" = false ]] && [[ "${current}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ "${version}" != "${current}" ]] && ! newer "${version}" "${current}"
+then
+  printf 'Formula/apm.rb: keeping apm %s; %s is older (pass --force to downgrade)\n' "${current}" "${version}"
+  exit 0
+fi
+
 #!/usr/bin/env bash
 # Regenerates Formula/apm.rb for one apm CLI release from what apmjs.dev serves.
 #
-#   scripts/update-apm.sh          # the newest stable x.y.z in https://apmjs.dev/cli/releases.txt,
-#                                  # refused if it is older than the version in the formula now
-#   scripts/update-apm.sh 0.1.3    # pin a given version (prereleases and downgrades allowed)
+#   scripts/update-apm.sh                  # the newest stable x.y.z in https://apmjs.dev/cli/releases.txt
+#   scripts/update-apm.sh 0.1.3            # a given stable version
+#   scripts/update-apm.sh --force 0.2.0-rc.1   # allow a prerelease or a downgrade
+#
+# Without --force, a version older than the formula's leaves the formula as it is and exits 0.
 #
 # It reads the version's SHA256SUMS, checks that every line agrees with releases.txt, downloads
 # each binary the formula uses and checks its SHA-256, and only then writes the formula.
