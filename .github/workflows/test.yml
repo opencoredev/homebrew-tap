@@ -1,0 +1,30 @@
+name: Test formula
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, macos-13, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Homebrew/actions/setup-homebrew@master
+      - name: Install and test
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: |
+          tap="$(brew --repository)/Library/Taps/opencoredev"
+          mkdir -p "$tap"
+          rm -rf "$tap/homebrew-tap"
+          ln -sfn "$GITHUB_WORKSPACE" "$tap/homebrew-tap"
+          brew install opencoredev/tap/apm
+          brew test opencoredev/tap/apm
+          apm --version

@@ -1,0 +1,58 @@
+name: Update apm
+
+# Checks apmjs.dev for a newer apm CLI release and updates Formula/apm.rb.
+# Runs every 6 hours, on demand, or when a release sends repository_dispatch type "apm-release".
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to pin (blank = newest released)"
+        required: false
+  repository_dispatch:
+    types: [apm-release]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-apm
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Regenerate the formula
+        env:
+          VERSION: ${{ inputs.version || github.event.client_payload.version || '' }}
+        run: scripts/update-apm.sh "$VERSION"
+
+      - name: Stop if nothing changed
+        id: diff
+        run: |
+          if git diff --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Install and test with Homebrew
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          tap="$(brew --repository)/Library/Taps/opencoredev"
+          mkdir -p "$tap"
+          ln -sfn "$GITHUB_WORKSPACE" "$tap/homebrew-tap"
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install opencoredev/tap/apm
+          brew test opencoredev/tap/apm
+          apm --version
+
+      - name: Commit
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          version=$(awk -F'"' '/^  version /{ print $2 }' Formula/apm.rb)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "apm $version"
+          git push
