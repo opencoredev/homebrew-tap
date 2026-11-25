@@ -4,6 +4,11 @@ class Apm < Formula
   version "0.1.2"
   license "MIT"
 
+  livecheck do
+    url "https://apmjs.dev/cli/releases.txt"
+    regex(/^v?(\d+(?:\.\d+)+)\s/i)
+  end
+
   on_macos do
     on_arm do
       url "https://apmjs.dev/cli/0.1.2/apm-darwin-arm64"
@@ -24,11 +29,6 @@ class Apm < Formula
       url "https://apmjs.dev/cli/0.1.2/apm-linux-x64"
       sha256 "73f1fdb7ef73d700dcb329135a18ed176923f1e6a0b574e4be01983d8604a503"
     end
-  end
-
-  livecheck do
-    url "https://apmjs.dev/cli/releases.txt"
-    regex(/^v?(\d+(?:\.\d+)+)\s/i)
   end
 
   def install

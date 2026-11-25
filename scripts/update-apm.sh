@@ -77,6 +77,11 @@ class Apm < Formula
   version "$version"
   license "MIT"
 
+  livecheck do
+    url "$site/cli/releases.txt"
+    regex(/^v?(\d+(?:\.\d+)+)\s/i)
+  end
+
   on_macos do
     on_arm do
       url "$site/cli/$version/apm-darwin-arm64"
@@ -97,11 +102,6 @@ class Apm < Formula
       url "$site/cli/$version/apm-linux-x64"
       sha256 "$linux_x64"
     end
-  end
-
-  livecheck do
-    url "$site/cli/releases.txt"
-    regex(/^v?(\d+(?:\.\d+)+)\s/i)
   end
 
   def install
