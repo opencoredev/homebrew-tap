@@ -38,8 +38,8 @@ jobs:
       - name: Regenerate the formula
         env:
           VERSION: ${{ inputs.version || github.event.client_payload.version || '' }}
-          FORCE: ${{ inputs.force && '--force' || '' }}
-        run: scripts/update-apm.sh $FORCE "$VERSION"
+          FORCE: ${{ inputs.force && 'true' || '' }}
+        run: scripts/update-apm.sh ${FORCE:+--force} "$VERSION"
       - name: Check for a change
         id: diff
         run: |
