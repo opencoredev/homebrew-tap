@@ -1,55 +1,92 @@
 name: Update apm
 
-# Checks apmjs.dev for a newer apm CLI release and updates Formula/apm.rb.
-# Runs every 6 hours, on demand, or when a release sends repository_dispatch type "apm-release".
+# Checks apmjs.dev for a newer apm CLI release and updates Formula/apm.rb once the new
+# formula installs and passes brew test on macOS arm64 and x64 and Linux x64 and arm64.
+# Runs every 6 hours, on demand (optionally pinning a version), or when a release sends
+# repository_dispatch type "apm-release" (optional client_payload.version).
 on:
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to pin (blank = newest released)"
+        description: "Version to pin (blank = newest stable release)"
         required: false
   repository_dispatch:
     types: [apm-release]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: update-apm
   cancel-in-progress: false
 
 jobs:
-  update:
+  generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Regenerate the formula
         env:
           VERSION: ${{ inputs.version || github.event.client_payload.version || '' }}
         run: scripts/update-apm.sh "$VERSION"
-
-      - name: Stop if nothing changed
+      - name: Check for a change
         id: diff
         run: |
           if git diff --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
-
-      - name: Install and test with Homebrew
+          git diff
+      - uses: actions/upload-artifact@v4
         if: steps.diff.outputs.changed == 'true'
+        with:
+          name: formula
+          path: Formula/apm.rb
+
+  test:
+    needs: generate
+    if: needs.generate.outputs.changed == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, macos-15-intel, ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: formula
+          path: Formula
+      - uses: Homebrew/actions/setup-homebrew@ceec4e8419bb3c97ce96e9dda7738499ed5f869d # 2026.11.14.1
+      - name: Install and test
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
         run: |
-          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           tap="$(brew --repository)/Library/Taps/opencoredev"
           mkdir -p "$tap"
-          ln -sfn "$GITHUB_WORKSPACE" "$tap/homebrew-tap"
-          HOMEBREW_NO_AUTO_UPDATE=1 brew install opencoredev/tap/apm
+          rm -rf "$tap/homebrew-tap"
+          ln -s "$GITHUB_WORKSPACE" "$tap/homebrew-tap"
+          brew install opencoredev/tap/apm
           brew test opencoredev/tap/apm
-          apm --version
+          test "$(apm --version)" = "$(awk -F'"' '/^  version /{ print $2 }' Formula/apm.rb)"
+          file "$(brew --prefix)/bin/apm" || true
 
+  push:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: formula
+          path: Formula
       - name: Commit
-        if: steps.diff.outputs.changed == 'true'
         run: |
           version=$(awk -F'"' '/^  version /{ print $2 }' Formula/apm.rb)
           git config user.name "github-actions[bot]"

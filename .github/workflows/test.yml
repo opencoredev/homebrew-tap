@@ -6,17 +6,20 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, macos-13, ubuntu-latest]
+        os: [macos-latest, macos-15-intel, ubuntu-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: Homebrew/actions/setup-homebrew@master
+      - uses: Homebrew/actions/setup-homebrew@ceec4e8419bb3c97ce96e9dda7738499ed5f869d # 2026.11.14.1
       - name: Install and test
         env:
           HOMEBREW_NO_AUTO_UPDATE: "1"
@@ -24,7 +27,8 @@ jobs:
           tap="$(brew --repository)/Library/Taps/opencoredev"
           mkdir -p "$tap"
           rm -rf "$tap/homebrew-tap"
-          ln -sfn "$GITHUB_WORKSPACE" "$tap/homebrew-tap"
+          ln -s "$GITHUB_WORKSPACE" "$tap/homebrew-tap"
           brew install opencoredev/tap/apm
           brew test opencoredev/tap/apm
-          apm --version
+          test "$(apm --version)" = "$(awk -F'"' '/^  version /{ print $2 }' Formula/apm.rb)"
+          file "$(brew --prefix)/bin/apm" || true
