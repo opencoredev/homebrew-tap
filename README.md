@@ -15,7 +15,7 @@ The formula installs the same standalone binaries as `curl -fsSL https://apmjs.d
 
 ## Updating
 
-The Update apm workflow checks `https://apmjs.dev/cli/releases.txt` every 6 hours. When a new stable release appears, it installs and tests the new formula on macOS (arm64, Intel) and Linux (x64, arm64) and commits it only if all four pass. To update right away, run the workflow from the Actions tab, or locally:
+Each production release of the apm CLI (`packages/infra/release-cli.ts` in opencoredev/apmjs) starts the Update apm workflow with its version. The workflow installs and tests the new formula on macOS (arm64, Intel) and Linux (x64, arm64) and commits it only if all four pass. Run it from the Actions tab, or locally:
 
 ```sh
 scripts/update-apm.sh          # newest release

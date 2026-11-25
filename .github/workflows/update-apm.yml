@@ -2,11 +2,10 @@ name: Update apm
 
 # Checks apmjs.dev for a newer apm CLI release and updates Formula/apm.rb once the new
 # formula installs and passes brew test on macOS arm64 and x64 and Linux x64 and arm64.
-# Runs every 6 hours, on demand (optionally pinning a version), or when a release sends
-# repository_dispatch type "apm-release" (optional client_payload.version).
+# apmjs's release-cli.ts starts it after each production CLI release (gh workflow run with
+# version=<x.y.z>). It also runs on demand, or on repository_dispatch type "apm-release"
+# (optional client_payload.version).
 on:
-  schedule:
-    - cron: "17 */6 * * *"
   workflow_dispatch:
     inputs:
       version:
