@@ -44,7 +44,8 @@ else
   [ -n "$version" ] || die "releases.txt lists no stable version"
 fi
 
-if [ "$force" = false ] && [[ "$current" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [ "$version" != "$current" ] && ! newer "$version" "$current"; then
+core="${current%%-*}"
+if [ "$force" = false ] && [[ "$core" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [ "$version" != "$current" ] && [ "$version" != "$core" ] && ! newer "$version" "$core"; then
   printf 'Formula/apm.rb: keeping apm %s; %s is older (pass --force to downgrade)\n' "$current" "$version"
   exit 0
 fi

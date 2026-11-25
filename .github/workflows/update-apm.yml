@@ -24,6 +24,7 @@ permissions:
 concurrency:
   group: update-apm
   cancel-in-progress: false
+  queue: max
 
 jobs:
   generate:
@@ -31,10 +32,14 @@ jobs:
     timeout-minutes: 15
     outputs:
       changed: ${{ steps.diff.outputs.changed }}
+      base: ${{ steps.base.outputs.hash }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
+      - name: Record the formula it starts from
+        id: base
+        run: echo "hash=$(git hash-object Formula/apm.rb)" >> "$GITHUB_OUTPUT"
       - name: Regenerate the formula
         env:
           VERSION: ${{ inputs.version || github.event.client_payload.version || '' }}
@@ -83,7 +88,7 @@ jobs:
           file "$(brew --prefix)/bin/apm" || true
 
   push:
-    needs: test
+    needs: [generate, test]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -95,11 +100,18 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: formula
-          path: Formula
+          path: tested
       - name: Commit
+        env:
+          BASE: ${{ needs.generate.outputs.base }}
         run: |
-          version=$(awk -F'"' '/^  version /{ print $2 }' Formula/apm.rb)
-          if git diff --quiet; then echo "main already has apm $version"; exit 0; fi
+          now=$(git hash-object Formula/apm.rb)
+          tested=$(git hash-object tested/apm.rb)
+          version=$(awk -F'"' '/^  version /{ print $2 }' tested/apm.rb)
+          if [ "$now" = "$tested" ]; then echo "main already has apm $version"; exit 0; fi
+          if [ "$now" != "$BASE" ]; then echo "Formula/apm.rb changed on main since this run started; not overwriting it with apm $version. Run the workflow again."; exit 1; fi
+          cp tested/apm.rb Formula/apm.rb
+          rm -rf tested
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "apm $version"
