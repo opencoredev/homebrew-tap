@@ -115,4 +115,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "apm $version"
-          git push || { git pull --rebase origin main && git push; }
+          git push || { echo "main moved while this ran; nothing was published. Run the workflow again."; exit 1; }
