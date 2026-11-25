@@ -1,28 +1,28 @@
 class Apm < Formula
   desc "Check npm packages before you install them"
   homepage "https://apmjs.dev"
-  version "0.1.3"
+  version "0.1.4"
   license "MIT"
 
   on_macos do
     on_arm do
-      url "https://apmjs.dev/cli/0.1.3/apm-darwin-arm64"
-      sha256 "182a07712d3dfb360e48ee52e75e186f8d85ec72d52e5f1ca15d8affbc0d316d"
+      url "https://apmjs.dev/cli/0.1.4/apm-darwin-arm64"
+      sha256 "898d20cded3ce97aca7968fd9c56144dcade77c8573c8302c365943c310cb485"
     end
     on_intel do
-      url "https://apmjs.dev/cli/0.1.3/apm-darwin-x64"
-      sha256 "c4a3850a9e9ba58da2bbc2c6bed09300535b0d07e3e0a4384818449268409277"
+      url "https://apmjs.dev/cli/0.1.4/apm-darwin-x64"
+      sha256 "66d84d00ff0926d73c7cbd20b3b826322589481cfc201ceb929817852afef20c"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://apmjs.dev/cli/0.1.3/apm-linux-arm64"
-      sha256 "8fe21329d2c978210aae249a4fac563dfe3072bf032ae2ce1ab7a52559b5c052"
+      url "https://apmjs.dev/cli/0.1.4/apm-linux-arm64"
+      sha256 "914be2e0d528a6405d082dd491fe11924ad53f38f52399e3c8cbb855102f83e2"
     end
     on_intel do
-      url "https://apmjs.dev/cli/0.1.3/apm-linux-x64"
-      sha256 "88bcbe520a864451361ba736d15fe4e7af7df4038b91c42aef9ca1e2961d7e1e"
+      url "https://apmjs.dev/cli/0.1.4/apm-linux-x64"
+      sha256 "fc153f7b7d216e15e1c3a48edb5d53f1ef5dd93d5a702d5cd8ae0ad731d3505b"
     end
   end
 
